@@ -1,25 +1,20 @@
-import sql from "mssql";
-
-
-const config: sql.config = {
-  server: process.env.DB_SERVER || "localhost",
-  database: process.env.DB_DATABASE || "ventas_autos",
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  options: {
-    trustServerCertificate: true,
-    encrypt: false
-  }
-};
+import mysql from "mysql2/promise";
 
 declare global {
-  var sqlPool: Promise<sql.ConnectionPool> | undefined;
+  var mysqlPool: mysql.Pool | undefined;
 }
 
 export async function getPool() {
-  if (!global.sqlPool) {
-    global.sqlPool = new sql.ConnectionPool(config).connect();
+  if (!global.mysqlPool) {
+    global.mysqlPool = mysql.createPool({
+      host: process.env.DB_SERVER || "localhost",
+      port: Number(process.env.DB_PORT || 3306),
+      database: process.env.DB_DATABASE || "ventas_autos",
+      user: process.env.DB_USER || "ventas_app",
+      password: process.env.DB_PASSWORD || "Ventas123!",
+      multipleStatements: true,
+      decimalNumbers: true
+    });
   }
-
-  return global.sqlPool;
+  return global.mysqlPool;
 }

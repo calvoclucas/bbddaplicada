@@ -1,5 +1,34 @@
+import { loadEnvConfig } from "@next/env";
 import bcrypt from "bcryptjs";
-const windows=process.env.DB_AUTH!=="sql";
-const sql:any=windows?require("mssql/msnodesqlv8"):require("mssql");
-const config:any=windows?{server:process.env.DB_SERVER||"(localdb)\\MSSQLLocalDB",database:process.env.DB_DATABASE||"ventas_autos",driver:"msnodesqlv8",options:{trustedConnection:true,trustServerCertificate:true}}:{server:process.env.DB_SERVER||"localhost",port:Number(process.env.DB_PORT||1433),database:process.env.DB_DATABASE||"ventas_autos",user:process.env.DB_USER,password:process.env.DB_PASSWORD,options:{encrypt:process.env.DB_ENCRYPT==="true",trustServerCertificate:true}};
-async function main(){const pool=await sql.connect(config);await pool.request().query(`IF OBJECT_ID('dbo.usuario_app','U') IS NULL CREATE TABLE dbo.usuario_app(id_usuario INT IDENTITY(1,1) PRIMARY KEY,usuario VARCHAR(60) NOT NULL UNIQUE,nombre VARCHAR(120) NOT NULL,password_hash VARCHAR(100) NOT NULL,activo BIT NOT NULL CONSTRAINT df_usuario_activo DEFAULT 1,fecha_alta DATETIME2 NOT NULL CONSTRAINT df_usuario_fecha DEFAULT SYSDATETIME());`);const u=process.env.ADMIN_USER||"admin",pass=process.env.ADMIN_PASSWORD||"Admin123!",h=await bcrypt.hash(pass,12);await pool.request().input("u",u).input("n","Administrador").input("h",h).query(`IF EXISTS(SELECT 1 FROM dbo.usuario_app WHERE usuario=@u) UPDATE dbo.usuario_app SET password_hash=@h,activo=1 WHERE usuario=@u ELSE INSERT dbo.usuario_app(usuario,nombre,password_hash) VALUES(@u,@n,@h)`);console.log(`Usuario ${u} creado/actualizado.`);await pool.close()}main().catch((e:any)=>{console.error(e);process.exit(1)});
+import mysql from "mysql2/promise";
+
+loadEnvConfig(process.cwd());
+
+async function main() {
+  const pool = await mysql.createConnection({
+    host: process.env.DB_SERVER || "localhost",
+    port: Number(process.env.DB_PORT || 3306),
+    database: process.env.DB_DATABASE || "ventas_autos",
+    user: process.env.DB_USER || "root",
+    password: process.env.DB_PASSWORD || ""
+  });
+
+  const u = process.env.ADMIN_USER || "admin";
+  const pass = process.env.ADMIN_PASSWORD || "Admin123!";
+  const h = await bcrypt.hash(pass, 12);
+
+  await pool.execute(
+    `INSERT INTO usuario_app (usuario, nombre, password_hash, activo)
+     VALUES (?, ?, ?, 1)
+     ON DUPLICATE KEY UPDATE password_hash = VALUES(password_hash), activo = 1`,
+    [u, "Administrador", h]
+  );
+
+  console.log(`Usuario "${u}" listo con contraseña "${pass}"`);
+  await pool.end();
+}
+
+main().catch((e) => {
+  console.error("Error en init-auth:", e);
+  process.exit(1);
+});
