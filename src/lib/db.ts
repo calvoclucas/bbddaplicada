@@ -1,22 +1,20 @@
-import sql from "mssql";
+import sql from "mssql/msnodesqlv8";
 
-
-const config: sql.config = {
-  server: process.env.DB_SERVER || "localhost",
-  database: process.env.DB_DATABASE || "ventas_autos",
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
+const config = {
+  server: "(localdb)\\MSSQLLocalDB",
+  database: "ventas_autos",
+  driver: "msnodesqlv8",
   options: {
+    trustedConnection: true,
     trustServerCertificate: true,
-    encrypt: false
-  }
+  },
 };
 
 declare global {
-  var sqlPool: Promise<sql.ConnectionPool> | undefined;
+  var sqlPool: Promise<any> | undefined;
 }
 
-export async function getPool() {
+export function getPool() {
   if (!global.sqlPool) {
     global.sqlPool = new sql.ConnectionPool(config).connect();
   }

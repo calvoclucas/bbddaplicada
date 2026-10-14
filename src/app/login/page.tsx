@@ -1,6 +1,9 @@
 "use client";
 import { FormEvent,useState } from "react";
 import { useRouter } from "next/navigation";
+console.log("DB_SERVER:", process.env.DB_SERVER);
+console.log("DB_DATABASE:", process.env.DB_DATABASE);
+console.log("DB_USER:", process.env.DB_USER);
 export default function Login(){
  const [error,setError]=useState(""); const [loading,setLoading]=useState(false); const router=useRouter();
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setLoading(true);setError("");const f=new FormData(e.currentTarget);

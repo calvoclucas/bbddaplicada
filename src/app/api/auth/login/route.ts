@@ -21,7 +21,8 @@ export async function POST(req: Request) {
 
   return Response.json(
     {
-      error: e?.message || String(e)
+      error: e?.message || String(e),
+      stack: e?.stack
     },
     {
       status: 500
